@@ -838,7 +838,7 @@ pub struct MediaSegment {
     /// `#EXT-X-DISCONTINUITY`
     pub discontinuity: bool,
     /// `#EXT-X-KEY:<attribute-list>`
-    pub key: Option<Key>,
+    pub keys: Vec<Key>,
     /// `#EXT-X-MAP:<attribute-list>`
     pub map: Option<Map>,
     /// `#EXT-X-PROGRAM-DATE-TIME:<YYYY-MM-DDThh:mm:ssZ>`
@@ -855,22 +855,17 @@ impl MediaSegment {
     }
 
     pub(crate) fn write_to<T: Write>(&self, w: &mut T) -> std::io::Result<()> {
-        if let Some(ref byte_range) = self.byte_range {
-            write!(w, "#EXT-X-BYTERANGE:")?;
-            byte_range.write_value_to(w)?;
-            writeln!(w)?;
-        }
         if self.discontinuity {
             writeln!(w, "#EXT-X-DISCONTINUITY")?;
-        }
-        if let Some(ref key) = self.key {
-            write!(w, "#EXT-X-KEY:")?;
-            key.write_attributes_to(w)?;
-            writeln!(w)?;
         }
         if let Some(ref map) = self.map {
             write!(w, "#EXT-X-MAP:")?;
             map.write_attributes_to(w)?;
+            writeln!(w)?;
+        }
+        for key in &self.keys {
+            write!(w, "#EXT-X-KEY:")?;
+            key.write_attributes_to(w)?;
             writeln!(w)?;
         }
         if let Some(ref v) = self.program_date_time {
@@ -885,10 +880,6 @@ impl MediaSegment {
             v.write_attributes_to(w)?;
             writeln!(w)?;
         }
-        for unknown_tag in &self.unknown_tags {
-            writeln!(w, "{}", unknown_tag)?;
-        }
-
         match WRITE_OPT_FLOAT_PRECISION.load(Ordering::Relaxed) {
             MAX => {
                 write!(w, "#EXTINF:{},", self.duration)?;
@@ -897,12 +888,20 @@ impl MediaSegment {
                 write!(w, "#EXTINF:{:.*},", n, self.duration)?;
             }
         };
-
         if let Some(ref v) = self.title {
             writeln!(w, "{}", v)?;
         } else {
             writeln!(w)?;
         }
+        if let Some(ref byte_range) = self.byte_range {
+            write!(w, "#EXT-X-BYTERANGE:")?;
+            byte_range.write_value_to(w)?;
+            writeln!(w)?;
+        }
+        for unknown_tag in &self.unknown_tags {
+            writeln!(w, "{}", unknown_tag)?;
+        }
+
 
         writeln!(w, "{}", self.uri)
     }
