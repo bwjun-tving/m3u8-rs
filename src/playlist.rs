@@ -836,7 +836,7 @@ pub struct MediaSegment {
     /// `#EXT-X-BYTERANGE:<n>[@<o>]`
     pub byte_range: Option<ByteRange>,
     /// `#EXT-X-DISCONTINUITY`
-    pub discontinuity: bool,
+    pub discontinuity: u8,
     /// `#EXT-X-KEY:<attribute-list>`
     pub key: Option<Key>,
     /// `#EXT-X-MAP:<attribute-list>`
@@ -855,13 +855,13 @@ impl MediaSegment {
     }
 
     pub(crate) fn write_to<T: Write>(&self, w: &mut T) -> std::io::Result<()> {
+        for _ in 0..self.discontinuity {
+            writeln!(w, "#EXT-X-DISCONTINUITY")?;
+        }
         if let Some(ref byte_range) = self.byte_range {
             write!(w, "#EXT-X-BYTERANGE:")?;
             byte_range.write_value_to(w)?;
             writeln!(w)?;
-        }
-        if self.discontinuity {
-            writeln!(w, "#EXT-X-DISCONTINUITY")?;
         }
         if let Some(ref key) = self.key {
             write!(w, "#EXT-X-KEY:")?;

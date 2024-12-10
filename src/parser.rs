@@ -432,7 +432,7 @@ fn media_playlist_from_tags(mut tags: Vec<MediaPlaylistTag>) -> MediaPlaylist {
                     next_segment.byte_range = Some(b);
                 }
                 SegmentTag::Discontinuity => {
-                    next_segment.discontinuity = true;
+                    next_segment.discontinuity = next_segment.discontinuity + 1;
                 }
                 SegmentTag::Key(k) => {
                     encryption_key = Some(k);
