@@ -409,6 +409,16 @@ fn media_playlist_from_tags(mut tags: Vec<MediaPlaylistTag>) -> MediaPlaylist {
                 media_playlist.discontinuity_sequence = n;
             }
             MediaPlaylistTag::EndList => {
+                if next_segment.discontinuity {
+                    next_segment.duration = 1.0;
+                    next_segment.keys = encryption_keys;
+                    next_segment.map = map.clone();
+                    next_segment.uri = String::from("");
+                    media_playlist.segments.push(next_segment);
+                    next_segment = MediaSegment::empty();
+                    encryption_keys = vec![];
+                    map = None;
+                }
                 media_playlist.end_list = true;
             }
             MediaPlaylistTag::PlaylistType(t) => {
@@ -432,6 +442,16 @@ fn media_playlist_from_tags(mut tags: Vec<MediaPlaylistTag>) -> MediaPlaylist {
                     next_segment.byte_range = Some(b);
                 }
                 SegmentTag::Discontinuity => {
+                    if next_segment.discontinuity {
+                        next_segment.duration = 1.0;
+                        next_segment.keys = encryption_keys;
+                        next_segment.map = map.clone();
+                        next_segment.uri = String::from("");
+                        media_playlist.segments.push(next_segment);
+                        next_segment = MediaSegment::empty();
+                        encryption_keys = vec![];
+                        map = None;
+                    }
                     next_segment.discontinuity = true;
                 }
                 SegmentTag::Key(k) => {
