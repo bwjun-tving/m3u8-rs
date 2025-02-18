@@ -855,9 +855,6 @@ impl MediaSegment {
     }
 
     pub(crate) fn write_to<T: Write>(&self, w: &mut T) -> std::io::Result<()> {
-        if self.discontinuity {
-            writeln!(w, "#EXT-X-DISCONTINUITY")?;
-        }
         if let Some(ref map) = self.map {
             write!(w, "#EXT-X-MAP:")?;
             map.write_attributes_to(w)?;
@@ -880,6 +877,17 @@ impl MediaSegment {
             v.write_attributes_to(w)?;
             writeln!(w)?;
         }
+        if self.discontinuity {
+            writeln!(w, "#EXT-X-DISCONTINUITY")?;
+        }
+        if let Some(ref byte_range) = self.byte_range {
+            write!(w, "#EXT-X-BYTERANGE:")?;
+            byte_range.write_value_to(w)?;
+            writeln!(w)?;
+        }
+        for unknown_tag in &self.unknown_tags {
+            writeln!(w, "{}", unknown_tag)?;
+        }
         match WRITE_OPT_FLOAT_PRECISION.load(Ordering::Relaxed) {
             MAX => {
                 write!(w, "#EXTINF:{},", self.duration)?;
@@ -893,15 +901,6 @@ impl MediaSegment {
         } else {
             writeln!(w)?;
         }
-        if let Some(ref byte_range) = self.byte_range {
-            write!(w, "#EXT-X-BYTERANGE:")?;
-            byte_range.write_value_to(w)?;
-            writeln!(w)?;
-        }
-        for unknown_tag in &self.unknown_tags {
-            writeln!(w, "{}", unknown_tag)?;
-        }
-
 
         writeln!(w, "{}", self.uri)
     }
